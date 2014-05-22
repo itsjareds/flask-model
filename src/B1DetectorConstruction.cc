@@ -29,7 +29,6 @@
 /// \brief Implementation of the B1DetectorConstruction class
 
 #include "B1DetectorConstruction.hh"
-
 #include "G4RunManager.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -37,6 +36,7 @@
 #include "G4Orb.hh"
 #include "G4Sphere.hh"
 #include "G4Trd.hh"
+#include "G4Tubs.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
 #include "G4SystemOfUnits.hh"
@@ -116,69 +116,53 @@ G4VPhysicalVolume* B1DetectorConstruction::Construct()
                     0,                       //copy number
                     checkOverlaps);          //overlaps checking
  
-  //     
-  // Shape 1
-  //  
-  G4Material* shape1_mat = nist->FindOrBuildMaterial("G4_A-150_TISSUE");
-  G4ThreeVector pos1 = G4ThreeVector(0, 2*cm, -7*cm);
-        
-  // Conical section shape       
-  G4double shape1_rmina =  0.*cm, shape1_rmaxa = 2.*cm;
-  G4double shape1_rminb =  0.*cm, shape1_rmaxb = 4.*cm;
-  G4double shape1_hz = 3.*cm;
-  G4double shape1_phimin = 0.*deg, shape1_phimax = 360.*deg;
-  G4Cons* solidShape1 =    
-    new G4Cons("Shape1", 
-    shape1_rmina, shape1_rmaxa, shape1_rminb, shape1_rmaxb, shape1_hz,
-    shape1_phimin, shape1_phimax);
-                      
-  G4LogicalVolume* logicShape1 =                         
-    new G4LogicalVolume(solidShape1,         //its solid
-                        shape1_mat,          //its material
-                        "Shape1");           //its name
-               
-  new G4PVPlacement(0,                       //no rotation
-                    pos1,                    //at position
-                    logicShape1,             //its logical volume
-                    "Shape1",                //its name
-                    logicEnv,                //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    checkOverlaps);          //overlaps checking
 
-
-  //     
-  // Shape 2
   //
-  G4Material* shape2_mat = nist->FindOrBuildMaterial("G4_BONE_COMPACT_ICRU");
-  G4ThreeVector pos2 = G4ThreeVector(0, -1*cm, 7*cm);
-
-  // Trapezoid shape       
-  G4double shape2_dxa = 12*cm, shape2_dxb = 12*cm;
-  G4double shape2_dya = 10*cm, shape2_dyb = 16*cm;
-  G4double shape2_dz  = 6*cm;      
-  G4Trd* solidShape2 =    
-    new G4Trd("Shape2",                      //its name
-              0.5*shape2_dxa, 0.5*shape2_dxb, 
-              0.5*shape2_dya, 0.5*shape2_dyb, 0.5*shape2_dz); //its size
-                
-  G4LogicalVolume* logicShape2 =                         
-    new G4LogicalVolume(solidShape2,         //its solid
-                        shape2_mat,          //its material
-                        "Shape2");           //its name
-               
-  new G4PVPlacement(0,                       //no rotation
-                    pos2,                    //at position
-                    logicShape2,             //its logical volume
-                    "Shape2",                //its name
-                    logicEnv,                //its mother  volume
-                    false,                   //no boolean operation
-                    0,                       //copy number
-                    checkOverlaps);          //overlaps checking
-                
-  // Set Shape2 as scoring volume
+  // Custom pipe
   //
-  fScoringVolume = logicShape2;
+  
+  // Define pipe material
+  G4double z, a, density;
+  G4String name, symbol;
+  G4int ncomponents, natoms;
+  
+  name = "Iron";
+  G4Element* elFe = new G4Element(name, symbol="Fe", z=26., a=55.845*g/mole);
+  
+  name = "Carbon";
+  G4Element* elC = new G4Element(name, symbol="C", z=6., a=12.011*g/mole);
+  
+  name = "Steel";
+  G4Material* steel_mat = new G4Material(name, density=7730.14*kg/m3, ncomponents=2);
+  steel_mat->AddElement(elFe, natoms=3);
+  steel_mat->AddElement(elC, natoms=1);
+
+  // Build pipe geometry
+  G4ThreeVector posPipe = G4ThreeVector(1, -1, 2);
+  G4double pipe1_rmin = 2.*cm, pipe1_rmax = 7.*cm;
+  G4double pipe1_hz = 3.*cm;
+  G4double pipe1_sPhi = 50.*deg, pipe1_dPhi = 210.*deg;
+  G4Tubs* pipe1 =
+    new G4Tubs("Pipe1",
+    pipe1_rmin, pipe1_rmax, pipe1_hz, pipe1_sPhi, pipe1_dPhi);
+    
+  G4LogicalVolume* logicPipe1 =
+    new G4LogicalVolume(pipe1,          //its solid
+                        steel_mat,      //its material
+                        "Pipe1");       //its name
+  
+  new G4PVPlacement(0,                  //no rotation
+                    posPipe,               //at position
+                    logicPipe1,         //its logicalvolume
+                    "Pipe1",            //its name
+                    logicEnv,           //its mother volume
+                    false,              //no boolean operation
+                    0,                  //copy number
+                    checkOverlaps);     //overlaps checking
+                
+  // Set Pipe1 as scoring volume
+  //
+  fScoringVolume = logicPipe1;
 
   //
   //always return the physical World
