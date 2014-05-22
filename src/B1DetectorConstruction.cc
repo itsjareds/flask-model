@@ -32,10 +32,6 @@
 #include "G4RunManager.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
-#include "G4Cons.hh"
-#include "G4Orb.hh"
-#include "G4Sphere.hh"
-#include "G4Trd.hh"
 #include "G4Tubs.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -116,7 +112,11 @@ G4VPhysicalVolume* B1DetectorConstruction::Construct()
                     0,                       //copy number
                     checkOverlaps);          //overlaps checking
  
-
+  //
+  // Mylar sheet
+  //
+  
+ 
   //
   // Custom pipe
   //
@@ -136,12 +136,41 @@ G4VPhysicalVolume* B1DetectorConstruction::Construct()
   G4Material* steel_mat = new G4Material(name, density=7730.14*kg/m3, ncomponents=2);
   steel_mat->AddElement(elFe, natoms=3);
   steel_mat->AddElement(elC, natoms=1);
+  
+  // Build mylar geometry
+  G4Material* mylar_mat = nist->FindOrBuildMaterial("G4_MYLAR");
+  G4ThreeVector posMylar = G4ThreeVector(0,0,0);
+  G4double mylar_hX = 85.*mm,
+           mylar_hY = 150.*mm,
+           mylar_hZ = 250.*micrometer;
+  G4Box* mylar =
+    new G4Box("Mylar",
+    mylar_hX, mylar_hY, mylar_hZ);
+
+  G4LogicalVolume* logicMylar =
+    new G4LogicalVolume(mylar,
+                        mylar_mat,
+                        "Mylar");
+                        
+  new G4PVPlacement(0,
+                    posMylar,
+                    logicMylar,
+                    "Mylar",
+                    logicEnv,
+                    false,
+                    0,
+                    checkOverlaps);
+                    
+  // Set mylar as scoring volume
+  fScoringVolume = logicMylar;
 
   // Build pipe geometry
   G4ThreeVector posPipe = G4ThreeVector(1, -1, 2);
-  G4double pipe1_rmin = 2.*cm, pipe1_rmax = 7.*cm;
-  G4double pipe1_hz = 3.*cm;
-  G4double pipe1_sPhi = 50.*deg, pipe1_dPhi = 210.*deg;
+  G4double pipe1_rmin = 2.*cm,
+           pipe1_rmax = 7.*cm,
+           pipe1_hz   = 3.*cm,
+           pipe1_sPhi = 50.*deg,
+           pipe1_dPhi = 210.*deg;
   G4Tubs* pipe1 =
     new G4Tubs("Pipe1",
     pipe1_rmin, pipe1_rmax, pipe1_hz, pipe1_sPhi, pipe1_dPhi);
@@ -162,7 +191,7 @@ G4VPhysicalVolume* B1DetectorConstruction::Construct()
                 
   // Set Pipe1 as scoring volume
   //
-  fScoringVolume = logicPipe1;
+  //fScoringVolume = logicPipe1;
 
   //
   //always return the physical World
